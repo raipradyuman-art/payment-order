@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}{{ party.name }}{% endblock %}
+{% block page_title %}{{ party.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <a href="/parties/edit/{{ party.id }}" class="btn btn-primary btn-sm"><i class="bi bi-pencil me-1"></i>Edit Info</a>
+  <a href="/parties" class="btn btn-secondary btn-sm">← Back</a>
+</div>
+<div class="row g-3">
+  <!-- Basic Info -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header">Basic Information</div>
+      <div class="card-body">
+        {% if party.photo_path %}
+        <img src="/documents/photo/{{ party.id }}" class="img-thumbnail mb-3" style="max-height:140px">
+        {% else %}
+        <div class="text-center p-3 mb-3 bg-light rounded"><i class="bi bi-person-circle" style="font-size:3rem;color:#ccc"></i><br><small class="text-muted">No photo</small></div>
+        {% endif %}
+        {% for lbl,val in [('Type',party.party_type),('PAN',party.pan_no),('Aadhaar',party.aadhaar_no),('Phone',party.phone),('Address',party.address),('City',party.city),('Notes',party.notes)] %}
+        <div class="mb-2"><small class="text-muted d-block">{{ lbl }}</small><span>{{ val or '—' }}</span></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <!-- Bank Accounts -->
+  <div class="col-md-8">
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between">
+        <span>Bank Accounts</span>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAccModal"><i class="bi bi-plus me-1"></i>Add Account</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0" style="font-size:.82rem">
+          <thead><tr><th>Beneficiary</th><th>Relation</th><th>Bank</th><th>Account No</th><th>IFSC</th><th>Branch</th><th>Default</th><th></th></tr></thead>
+          <tbody>
+          {% for a in accounts %}
+          <tr>
+            <td>{{ a.beneficiary_name }}</td><td>{{ a.relation }}</td>
+            <td>{{ a.bank_name }}</td><td>{{ a.account_number }}</td>
+            <td>{{ a.ifsc_code }}</td><td>{{ a.branch or '—' }}</td>
+            <td>{% if a.is_default %}<span class="badge bg-warning text-dark">★ Default</span>{% endif %}</td>
+            <td class="d-flex gap-1">
+              {% if not a.is_default %}
+              <form method="POST" action="/parties/{{ party.id }}/accounts/{{ a.id }}/default"><button class="btn btn-xs btn-outline-warning" title="Set default">★</button></form>
+              {% endif %}
+              <form method="POST" action="/parties/{{ party.id }}/accounts/{{ a.id }}/delete" onsubmit="return confirm('Delete?')"><button class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></button></form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" class="text-muted text-center py-2">No accounts. Add one →</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Documents -->
+    <div class="card">
+      <div class="card-header d-flex justify-content-between">
+        <span>Documents</span>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addDocModal"><i class="bi bi-upload me-1"></i>Upload</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0" style="font-size:.82rem">
+          <thead><tr><th>Document Name</th><th>Type</th><th>Uploaded</th><th></th></tr></thead>
+          <tbody>
+          {% for d in docs %}
+          <tr>
+            <td><a href="/documents/{{ d.id }}/download" target="_blank">{{ d.doc_name }}</a></td>
+            <td>{{ d.doc_path.split('.')[-1].upper() if d.doc_path else '—' }}</td>
+            <td>{{ d.uploaded_at }}</td>
+            <td>
+              <a href="/documents/{{ d.id }}/download" target="_blank" class="btn btn-xs btn-outline-primary me-1"><i class="bi bi-eye"></i></a>
+              <form method="POST" action="/parties/{{ party.id }}/documents/{{ d.id }}/delete" style="display:inline" onsubmit="return confirm('Delete?')">
+                <button class="btn btn-xs btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-muted text-center py-2">No documents uploaded.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Account Modal -->
+<div class="modal fade" id="addAccModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="POST" action="/parties/{{ party.id }}/accounts/save">
+      <div class="modal-header"><h5 class="modal-title">Add Bank Account</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Beneficiary Name *</label><input type="text" name="beneficiary_name" class="form-control" required></div>
+          <div class="col-md-3"><label class="form-label">Relation</label>
+            <select name="relation" class="form-select">
+              {% for r in ['Self','Father','Mother','Spouse','Son','Daughter','Brother','Sister','Other'] %}<option>{{ r }}</option>{% endfor %}
+            </select></div>
+          <div class="col-md-3"><label class="form-label">Bank Name</label>
+            <input type="text" name="bank_name" id="acc_bank" class="form-control" list="bank_list">
+            <datalist id="bank_list">{% for b in banks %}<option value="{{ b.bank_name }}">{% endfor %}</datalist></div>
+          <div class="col-md-4"><label class="form-label">Account Number *</label><input type="text" name="account_number" class="form-control" required></div>
+          <div class="col-md-3">
+            <label class="form-label">IFSC Code *</label>
+            <div class="input-group">
+              <input type="text" name="ifsc_code" id="acc_ifsc" class="form-control" required oninput="this.value=this.value.toUpperCase()" onblur="fetchIFSC(this.value)">
+              <button type="button" class="btn btn-outline-primary" onclick="fetchIFSC(document.getElementById('acc_ifsc').value)"><i class="bi bi-search"></i></button>
+            </div>
+            <small id="ifsc_status" class="text-muted"></small>
+          </div>
+          <div class="col-md-3"><label class="form-label">Branch</label><input type="text" name="branch" id="acc_branch" class="form-control"></div>
+          <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" name="is_default" id="is_default"><label class="form-check-label" for="is_default">Set as default account</label></div></div>
+        </div>
+        <div id="ifsc_info" class="alert alert-info mt-2 py-2 small" style="display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Account</button>
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Doc Modal -->
+<div class="modal fade" id="addDocModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/parties/{{ party.id }}/documents/upload" enctype="multipart/form-data">
+      <div class="modal-header"><h5 class="modal-title">Upload Document</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Document Name *</label><input type="text" name="doc_name" class="form-control" placeholder="e.g. Aadhaar Card, PAN Card, Passbook" required></div>
+        <div class="mb-3"><label class="form-label">File (PDF/Image) *</label><input type="file" name="doc_file" class="form-control" accept=".pdf,.png,.jpg,.jpeg" required></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Upload</button>
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function fetchIFSC(code) {
+  code = code.trim().toUpperCase();
+  if (code.length !== 11) return;
+  const st = document.getElementById('ifsc_status');
+  const info = document.getElementById('ifsc_info');
+  st.textContent = '⏳ Looking up...'; st.className = 'text-muted';
+  fetch('/api/ifsc/' + code)
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) { st.textContent = '✗ ' + d.error; st.className = 'text-danger'; info.style.display='none'; return; }
+      document.getElementById('acc_bank').value = d.bank || '';
+      document.getElementById('acc_branch').value = d.branch || '';
+      st.textContent = '✓ Found: ' + d.bank; st.className = 'text-success';
+      info.style.display = 'block';
+      info.textContent = d.bank + ' | ' + d.branch + (d.city ? ' | ' + d.city : '') + (d.source==='online' ? ' (fetched online)' : ' (local master)');
+    })
+    .catch(() => { st.textContent = 'Network error'; st.className = 'text-danger'; });
+}
+</script>
+{% endblock %}

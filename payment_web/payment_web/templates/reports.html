@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-2"><label class="form-label mb-1">From</label><input type="text" name="from" class="form-control form-control-sm" value="{{ from_d }}"></div>
+      <div class="col-md-2"><label class="form-label mb-1">To</label><input type="text" name="to" class="form-control form-control-sm" value="{{ to_d }}"></div>
+      <div class="col-md-2"><label class="form-label mb-1">Party</label>
+        <select name="party" class="form-select form-select-sm"><option value="All">All Parties</option>
+        {% for p in parties_list %}<option {{ 'selected' if party_f==p.name }}>{{ p.name }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-2"><label class="form-label mb-1">Work</label>
+        <select name="work" class="form-select form-select-sm"><option value="All">All Work</option>
+        {% for w in works_list %}<option {{ 'selected' if work_f==w.work_name }}>{{ w.work_name }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-2"><label class="form-label mb-1">Transfer Type</label>
+        <select name="ttype" class="form-select form-select-sm">
+        {% for t in ['All','NEFT','RTGS','IMPS'] %}<option {{ 'selected' if ttype_f==t }}>{{ t }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-1"><label class="form-label mb-1">Account</label>
+        <select name="account" class="form-select form-select-sm"><option value="All">All</option>
+        {% for a in acc_list %}<option {{ 'selected' if acc_f==a.account_name }}>{{ a.account_name }}</option>{% endfor %}
+        </select></div>
+      <div class="col-auto"><button type="submit" class="btn btn-primary btn-sm">Filter</button></div>
+      <div class="col-auto"><a href="/reports" class="btn btn-outline-secondary btn-sm">Reset</a></div>
+    </form>
+  </div>
+</div>
+<div class="row g-3 mb-3">
+  {% for lbl,val,col in [('Transactions',rows|length,'#1A5276'),('Gross Amount',fmt(total.gross),'#148F77'),('Total Advance',fmt(total.adv),'#B7950B'),('Net Payable',fmt(total.net),'#C0392B')] %}
+  <div class="col-6 col-md-3"><div class="stat-card"><div class="val" style="color:{{ col }};font-size:1.3rem">{{ val }}</div><div class="lbl">{{ lbl }}</div></div></div>
+  {% endfor %}
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0" style="font-size:.82rem">
+      <thead><tr><th>Ref No</th><th>Date</th><th>Account</th><th>Party</th><th>Beneficiary</th><th>Bank</th><th>Type</th><th>Work</th><th>Amount</th><th>Advance</th><th>Net</th></tr></thead>
+      <tbody>
+      {% for r in rows %}<tr>
+        <td>{{ r.ref_no }}</td><td>{{ r.order_date }}</td><td>{{ r.account_name or '—' }}</td>
+        <td>{{ r.party_name }}</td><td>{{ r.beneficiary_name }}</td><td>{{ r.bank_name }}</td>
+        <td><span class="badge badge-{{ r.transfer_type|lower }}">{{ r.transfer_type }}</span></td>
+        <td>{{ r.work_name }}</td>
+        <td>{{ fmt(r.payment_amount) }}</td><td>{{ fmt(r.advance_amount) }}</td>
+        <td class="fw-bold text-primary">{{ fmt(r.net_amount) }}</td>
+      </tr>{% else %}
+      <tr><td colspan="11" class="text-center text-muted py-4">No records found for selected filters.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

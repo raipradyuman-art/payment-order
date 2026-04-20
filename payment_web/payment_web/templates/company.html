@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Company Settings{% endblock %}
+{% block page_title %}Company Settings{% endblock %}
+{% block content %}
+<form method="POST" enctype="multipart/form-data">
+<div class="card mb-3">
+  <div class="card-header">Company Details</div>
+  <div class="card-body">
+    <div class="row g-3">
+      {% for lbl,name,val,col in [
+        ('Company Name *','name',co.name if co else '',8),
+        ('GST Number','gst_no',co.gst_no if co else '',4),
+        ('PAN Number','pan_no',co.pan_no if co else '',3),
+        ('Phone','phone',co.phone if co else '',3),
+        ('Email','email',co.email if co else '',4),
+        ('City','city',co.city if co else '',3),
+        ('State','state',co.state if co else '',3),
+        ('Pincode','pincode',co.pincode if co else '',2),
+      ] %}
+      <div class="col-md-{{ col }}">
+        <label class="form-label">{{ lbl }}</label>
+        <input type="text" name="{{ name }}" class="form-control" value="{{ val or '' }}" {{ 'required' if '*' in lbl else '' }}>
+      </div>
+      {% endfor %}
+      <div class="col-12"><label class="form-label">Address</label><textarea name="address" class="form-control" rows="2">{{ co.address if co else '' }}</textarea></div>
+      <div class="col-md-6"><label class="form-label">Bank Details (for letterhead)</label><textarea name="bank_details" class="form-control" rows="2">{{ co.bank_details if co else '' }}</textarea></div>
+      <div class="col-md-6"><label class="form-label">Other Details</label><textarea name="other_details" class="form-control" rows="2">{{ co.other_details if co else '' }}</textarea></div>
+      <div class="col-md-6">
+        <label class="form-label">Letterhead Image (PNG/JPG)</label>
+        <input type="file" name="letterhead" class="form-control" accept="image/*">
+        {% if co and co.letterhead_path %}
+        <small class="text-success"><i class="bi bi-check-circle me-1"></i>Letterhead uploaded</small>
+        {% endif %}
+        <small class="text-muted d-block">Upload your company letterhead — will appear at top of every bank payment letter</small>
+      </div>
+    </div>
+  </div>
+</div>
+<button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Save Settings</button>
+</form>
+{% endblock %}

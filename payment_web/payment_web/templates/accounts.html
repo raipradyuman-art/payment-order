@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Our Bank Accounts{% endblock %}
+{% block page_title %}Our Bank Accounts{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-end mb-3">
+  <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAccModal"><i class="bi bi-plus me-1"></i>Add Account</button>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Account Name</th><th>Code</th><th>Bank</th><th>Account No</th><th>IFSC</th><th>Branch</th><th>Type</th><th>Sample Ref No</th><th></th></tr></thead>
+      <tbody>
+      {% for a in accounts %}<tr>
+        <td class="fw-semibold">{{ a.account_name }}</td>
+        <td><span class="badge bg-primary">{{ a.account_code }}</span></td>
+        <td>{{ a.bank_name }}</td><td>{{ a.account_number }}</td>
+        <td>{{ a.ifsc_code }}</td><td>{{ a.branch }}</td><td>{{ a.account_type }}</td>
+        <td><code>{{ a.account_code }}/{{ fy }}/001</code></td>
+        <td class="d-flex gap-1">
+          <button class="btn btn-sm btn-outline-primary" onclick="editAcc({{ a.id }},'{{ a.account_name }}','{{ a.account_code }}','{{ a.bank_name }}','{{ a.account_number }}','{{ a.ifsc_code }}','{{ a.branch }}','{{ a.account_type }}')" data-bs-toggle="modal" data-bs-target="#addAccModal"><i class="bi bi-pencil"></i></button>
+          <form method="POST" action="/accounts/delete/{{ a.id }}" onsubmit="return confirm('Delete?')"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>
+        </td>
+      </tr>{% else %}
+      <tr><td colspan="9" class="text-center text-muted py-4">No accounts. Add your first bank account →</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal fade" id="addAccModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <form method="POST" action="/accounts/save">
+  <input type="hidden" name="id" id="acc_id">
+  <div class="modal-header"><h5 class="modal-title">Bank Account</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body row g-3">
+    <div class="col-md-6"><label class="form-label">Account Name *</label><input type="text" name="account_name" id="f_name" class="form-control" required placeholder="e.g. SRI SHYAM COLD STORAGE CC ACCOUNT"></div>
+    <div class="col-md-3"><label class="form-label">Account Code * <small class="text-muted">(for Ref No)</small></label><input type="text" name="account_code" id="f_code" class="form-control" required placeholder="e.g. SSCS" style="text-transform:uppercase"></div>
+    <div class="col-md-3"><label class="form-label">Account Type</label><select name="account_type" id="f_type" class="form-select"><option>Current</option><option>Savings</option><option>OD</option><option>CC</option></select></div>
+    <div class="col-md-4"><label class="form-label">Bank Name</label><input type="text" name="bank_name" id="f_bank" class="form-control"></div>
+    <div class="col-md-4"><label class="form-label">Account Number</label><input type="text" name="account_number" id="f_accno" class="form-control"></div>
+    <div class="col-md-4"><label class="form-label">IFSC Code</label><input type="text" name="ifsc_code" id="f_ifsc" class="form-control"></div>
+    <div class="col-md-6"><label class="form-label">Branch</label><input type="text" name="branch" id="f_branch" class="form-control"></div>
+  </div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Save Account</button></div>
+  </form>
+</div></div></div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function editAcc(id,name,code,bank,accno,ifsc,branch,atype){
+  document.getElementById('acc_id').value=id;
+  document.getElementById('f_name').value=name;
+  document.getElementById('f_code').value=code;
+  document.getElementById('f_bank').value=bank;
+  document.getElementById('f_accno').value=accno;
+  document.getElementById('f_ifsc').value=ifsc;
+  document.getElementById('f_branch').value=branch;
+  document.getElementById('f_type').value=atype;
+}
+document.getElementById('addAccModal').addEventListener('hidden.bs.modal',()=>{
+  document.getElementById('acc_id').value='';
+  ['f_name','f_code','f_bank','f_accno','f_ifsc','f_branch'].forEach(id=>document.getElementById(id).value='');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if order else 'New' }} Payment Order{% endblock %}
+{% block page_title %}{{ 'Edit Order: ' + order.ref_no if order else 'New Payment Order' }}{% endblock %}
+{% block extra_css %}
+<style>
+.add-row{background:#f8f9fa;border:1px solid #e0e3e8;border-radius:8px;padding:1rem}
+.items-table th{font-size:.78rem;background:#1A5276;color:#fff}
+.items-table td{font-size:.82rem}
+.net-display{background:#e8f4f8;font-weight:700;color:#1A5276}
+</style>
+{% endblock %}
+{% block content %}
+<form method="POST" action="/orders/save" id="orderForm">
+<input type="hidden" name="order_id" value="{{ order.id if order else '' }}">
+<input type="hidden" name="ref_no" value="{{ order.ref_no if order else '' }}">
+<input type="hidden" name="items_json" id="items_json" value="[]">
+
+<!-- Order Header -->
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">From Account *</label>
+        <select name="our_account_id" id="acc_select" class="form-select" required>
+          <option value="">-- Select Account --</option>
+          {% for a in accs %}
+          <option value="{{ a.id }}" data-code="{{ a.account_code }}"
+            {{ 'selected' if order and order.our_account_id==a.id else '' }}>
+            {{ a.account_name }} ({{ a.account_code }}) — {{ a.bank_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Ref No</label>
+        <div id="ref_display" class="form-control bg-light fw-bold text-primary">
+          {{ order.ref_no if order else '— select account —' }}
+        </div>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Date</label>
+        <input type="text" name="order_date" class="form-control" id="order_date"
+          value="{{ order.order_date|replace('-','-') if order else today }}" placeholder="DD-MM-YYYY">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Cheque No</label>
+        <input type="text" name="cheque_no" class="form-control"
+          value="{{ order.cheque_no or '' if order else '' }}">
+      </div>
+      <div class="col-md-1">
+        <label class="form-label">Cheque Date</label>
+        <input type="text" name="cheque_date" class="form-control"
+          value="{{ order.cheque_date or today if order else today }}" placeholder="DD-MM-YYYY">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Item Row -->
+<div class="add-row mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-2">
+      <label class="form-label mb-1">Party *</label>
+      <select id="i_party" class="form-select form-select-sm">
+        <option value="">-- Party --</option>
+        {% for p in parties %}
+        <option value="{{ p.id }}">{{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label mb-1">Account</label>
+      <select id="i_pacc" class="form-select form-select-sm">
+        <option value="">-- Select Account --</option>
+      </select>
+    </div>
+    <div class="col-md-1">
+      <label class="form-label mb-1">Transfer</label>
+      <select id="i_ttype" class="form-select form-select-sm">
+        <option>NEFT</option><option>RTGS</option><option>IMPS</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label mb-1">Work *</label>
+      <select id="i_work" class="form-select form-select-sm">
+        <option value="">-- Work --</option>
+        {% for w in works %}
+        <option value="{{ w.id }}">{{ w.work_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-1">
+      <label class="form-label mb-1">Details</label>
+      <input type="text" id="i_details" class="form-control form-control-sm" placeholder="Invoice#">
+    </div>
+    <div class="col-md-1">
+      <label class="form-label mb-1">Advance</label>
+      <input type="number" id="i_adv" class="form-control form-control-sm" value="0" min="0">
+    </div>
+    <div class="col-md-1">
+      <label class="form-label mb-1">Amount *</label>
+      <input type="number" id="i_amt" class="form-control form-control-sm" placeholder="0">
+    </div>
+    <div class="col-md-1">
+      <label class="form-label mb-1">Net</label>
+      <input type="text" id="i_net" class="form-control form-control-sm net-display" readonly value="0.00">
+    </div>
+    <div class="col-md-1">
+      <label class="form-label mb-1">Note</label>
+      <input type="text" id="i_note" class="form-control form-control-sm" placeholder="Optional">
+    </div>
+    <div class="col-md-auto">
+      <button type="button" class="btn btn-success btn-sm" onclick="addItem()">
+        <i class="bi bi-plus-lg"></i> Add
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Items Table -->
+<div class="card mb-3">
+  <div class="table-responsive">
+    <table class="table items-table mb-0" id="itemsTable">
+      <thead><tr>
+        <th>#</th><th>Party</th><th>Beneficiary</th><th>Bank</th>
+        <th>Account No</th><th>IFSC</th><th>Type</th><th>Work</th>
+        <th>Amount</th><th>Advance</th><th>Net</th><th>Note</th><th></th>
+      </tr></thead>
+      <tbody id="itemsTbody">
+        {% if order and items %}
+        {% for it in items %}
+        <tr data-idx="{{ loop.index0 }}">
+          <td>{{ loop.index }}</td>
+          <td>{{ it.party_name }}</td>
+          <td>{{ it.beneficiary_name }}</td>
+          <td>{{ it.bank_name }}</td>
+          <td>{{ it.account_number }}</td>
+          <td>{{ it.ifsc_code }}</td>
+          <td><span class="badge badge-{{ it.transfer_type|lower }}">{{ it.transfer_type }}</span></td>
+          <td>{{ it.work_name }}</td>
+          <td>{{ "%.2f"|format(it.payment_amount|float) }}</td>
+          <td>{{ "%.2f"|format(it.advance_amount|float) }}</td>
+          <td class="fw-bold text-primary">{{ "%.2f"|format(it.net_amount|float) }}</td>
+          <td>{{ it.note or '' }}</td>
+          <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItem(this)"><i class="bi bi-trash"></i></button></td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Bottom bar -->
+<div class="d-flex justify-content-between align-items-center">
+  <div>
+    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeSelected()">
+      <i class="bi bi-trash me-1"></i>Remove Selected
+    </button>
+    <span class="ms-4 fw-bold fs-5 text-primary" id="total_display">Net Total: Rs. 0.00</span>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/history" class="btn btn-secondary">Cancel</a>
+    <button type="submit" class="btn btn-primary" onclick="prepareSubmit()">
+      <i class="bi bi-save me-1"></i>Save Order
+    </button>
+  </div>
+</div>
+</form>
+
+<!-- Hidden data stores -->
+<div id="party_accounts_cache" style="display:none"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Items array
+let items = [];
+
+// Pre-load existing items if editing
+{% if order and items %}
+{% for it in items %}
+items.push({
+  party_id: {{ it.party_id or 0 }},
+  party_name: "{{ it.party_name|e }}",
+  party_account_id: {{ it.party_account_id or 0 }},
+  beneficiary_name: "{{ it.beneficiary_name|e }}",
+  bank_name: "{{ it.bank_name|e }}",
+  account_number: "{{ it.account_number|e }}",
+  ifsc_code: "{{ it.ifsc_code|e }}",
+  branch: "{{ it.branch|e }}",
+  transfer_type: "{{ it.transfer_type }}",
+  work_id: {{ it.work_id or 0 }},
+  work_name: "{{ it.work_name|e }}",
+  details: "{{ it.details|e }}",
+  advance_amount: {{ it.advance_amount|float }},
+  payment_amount: {{ it.payment_amount|float }},
+  net_amount: {{ it.net_amount|float }},
+  note: "{{ it.note|e }}"
+});
+{% endfor %}
+{% endif %}
+
+// Ref No fetch when account changes
+document.getElementById('acc_select').addEventListener('change', function() {
+  const aid = this.value;
+  if (!aid) { document.getElementById('ref_display').textContent = '— select account —'; return; }
+  fetch('/api/ref_no/' + aid)
+    .then(r => r.json())
+    .then(d => { document.getElementById('ref_display').textContent = d.ref_no || '—'; });
+});
+
+// Party → load accounts
+document.getElementById('i_party').addEventListener('change', function() {
+  const pid = this.value;
+  const sel = document.getElementById('i_pacc');
+  sel.innerHTML = '<option value="">Loading...</option>';
+  if (!pid) { sel.innerHTML = '<option value="">-- Select Account --</option>'; return; }
+  fetch('/api/party/' + pid + '/accounts')
+    .then(r => r.json())
+    .then(accs => {
+      sel.innerHTML = '<option value="">-- Select Account --</option>';
+      accs.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.dataset.ben = a.beneficiary_name;
+        opt.dataset.bank = a.bank_name;
+        opt.dataset.accno = a.account_number;
+        opt.dataset.ifsc = a.ifsc_code;
+        opt.dataset.branch = a.branch || '';
+        opt.textContent = a.beneficiary_name + ' (' + a.bank_name + ')' + (a.is_default ? ' ★' : '');
+        if (a.is_default) { opt.selected = true; }
+        sel.appendChild(opt);
+      });
+    });
+});
+
+// Advance/Amount → Net
+function calcNet() {
+  const amt = parseFloat(document.getElementById('i_amt').value) || 0;
+  const adv = parseFloat(document.getElementById('i_adv').value) || 0;
+  document.getElementById('i_net').value = Math.max(0, amt - adv).toFixed(2);
+}
+document.getElementById('i_amt').addEventListener('input', calcNet);
+document.getElementById('i_adv').addEventListener('input', calcNet);
+
+function addItem() {
+  const partyEl = document.getElementById('i_party');
+  const paccEl  = document.getElementById('i_pacc');
+  const amt = parseFloat(document.getElementById('i_amt').value) || 0;
+  const workEl  = document.getElementById('i_work');
+
+  if (!partyEl.value) { alert('Please select a party.'); return; }
+  if (amt <= 0) { alert('Please enter a valid amount.'); return; }
+
+  const selOpt  = paccEl.options[paccEl.selectedIndex];
+  const adv = parseFloat(document.getElementById('i_adv').value) || 0;
+  const net = Math.max(0, amt - adv);
+
+  const item = {
+    party_id:         parseInt(partyEl.value),
+    party_name:       partyEl.options[partyEl.selectedIndex].text,
+    party_account_id: parseInt(paccEl.value) || 0,
+    beneficiary_name: selOpt.dataset.ben || partyEl.options[partyEl.selectedIndex].text,
+    bank_name:        selOpt.dataset.bank || '',
+    account_number:   selOpt.dataset.accno || '',
+    ifsc_code:        selOpt.dataset.ifsc || '',
+    branch:           selOpt.dataset.branch || '',
+    transfer_type:    document.getElementById('i_ttype').value,
+    work_id:          parseInt(workEl.value) || 0,
+    work_name:        workEl.options[workEl.selectedIndex].text,
+    details:          document.getElementById('i_details').value,
+    advance_amount:   adv,
+    payment_amount:   amt,
+    net_amount:       net,
+    note:             document.getElementById('i_note').value,
+  };
+  items.push(item);
+  renderTable();
+  // Clear inputs
+  document.getElementById('i_party').value='';
+  document.getElementById('i_pacc').innerHTML='<option value="">-- Select Account --</option>';
+  document.getElementById('i_amt').value='';
+  document.getElementById('i_adv').value='0';
+  document.getElementById('i_net').value='0.00';
+  document.getElementById('i_details').value='';
+  document.getElementById('i_note').value='';
+}
+
+function removeItem(btn) {
+  const row = btn.closest('tr');
+  const idx = parseInt(row.dataset.idx);
+  items.splice(idx, 1);
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('itemsTbody');
+  tbody.innerHTML = '';
+  let total = 0;
+  items.forEach((it, i) => {
+    total += it.net_amount;
+    const badge = {'NEFT':'badge-neft','RTGS':'badge-rtgs','IMPS':'badge-imps'}[it.transfer_type]||'bg-secondary';
+    tbody.innerHTML += `<tr data-idx="${i}">
+      <td>${i+1}</td>
+      <td>${it.party_name}</td>
+      <td>${it.beneficiary_name}</td>
+      <td>${it.bank_name}</td>
+      <td>${it.account_number}</td>
+      <td>${it.ifsc_code}</td>
+      <td><span class="badge ${badge}">${it.transfer_type}</span></td>
+      <td>${it.work_name}</td>
+      <td>${it.payment_amount.toFixed(2)}</td>
+      <td>${it.advance_amount.toFixed(2)}</td>
+      <td class="fw-bold text-primary">${it.net_amount.toFixed(2)}</td>
+      <td>${it.note||''}</td>
+      <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItem(this)">
+        <i class="bi bi-trash"></i></button></td>
+    </tr>`;
+  });
+  document.getElementById('total_display').textContent =
+    'Net Total: Rs. ' + total.toLocaleString('en-IN', {minimumFractionDigits:2});
+}
+
+function prepareSubmit() {
+  document.getElementById('items_json').value = JSON.stringify(items);
+}
+
+// Initialize table if editing
+renderTable();
+</script>
+{% endblock %}

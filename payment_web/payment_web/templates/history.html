@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Payment History{% endblock %}
+{% block page_title %}Payment History{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-2"><label class="form-label mb-1">From</label><input type="text" name="from" class="form-control form-control-sm" value="{{ from_d }}" placeholder="DD-MM-YYYY"></div>
+      <div class="col-md-2"><label class="form-label mb-1">To</label><input type="text" name="to" class="form-control form-control-sm" value="{{ to_d }}" placeholder="DD-MM-YYYY"></div>
+      <div class="col-md-3"><label class="form-label mb-1">Party</label><input type="text" name="party" class="form-control form-control-sm" value="{{ party_f }}" placeholder="Filter by party..."></div>
+      <div class="col-md-3"><label class="form-label mb-1">Account</label>
+        <select name="account" class="form-select form-select-sm">
+          <option value="">All Accounts</option>
+          {% for a in acc_list %}<option {{ 'selected' if acc_f==a.account_name }}>{{ a.account_name }}</option>{% endfor %}
+        </select></div>
+      <div class="col-auto"><button type="submit" class="btn btn-primary btn-sm">Filter</button></div>
+      <div class="col-auto"><a href="/history" class="btn btn-outline-secondary btn-sm">Reset</a></div>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-list-ul me-2"></i>{{ orders|length }} Orders — Total: <strong class="text-primary">{{ fmt(total) }}</strong></span>
+    <a href="/orders/new" class="btn btn-primary btn-sm"><i class="bi bi-plus me-1"></i>New Order</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0" style="font-size:.84rem">
+      <thead><tr><th>Ref No</th><th>Date</th><th>Account</th><th>Cheque</th><th>Items</th><th>Gross</th><th>Advance</th><th>Net</th><th>Status</th><th>By</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for o in orders %}
+      <tr>
+        <td><a href="/orders/{{ o.id }}" class="fw-semibold text-decoration-none">{{ o.ref_no }}</a></td>
+        <td>{{ o.order_date }}</td><td>{{ o.account_name or '—' }}</td>
+        <td>{{ o.cheque_no or '—' }}</td>
+        <td><span class="badge bg-secondary">{{ o.items }}</span></td>
+        <td>{{ fmt(o.total_gross) }}</td><td>{{ fmt(o.total_advance) }}</td>
+        <td class="fw-bold text-primary">{{ fmt(o.total_net) }}</td>
+        <td><span class="badge bg-success">{{ o.status }}</span></td>
+        <td>{{ o.created_by }}</td>
+        <td>
+          <a href="/orders/{{ o.id }}/pdf" target="_blank" class="btn btn-sm btn-outline-danger" title="PDF"><i class="bi bi-file-pdf"></i></a>
+          <a href="/orders/{{ o.id }}/excel" class="btn btn-sm btn-outline-success ms-1" title="Excel"><i class="bi bi-file-excel"></i></a>
+          <a href="/orders/edit/{{ o.id }}" class="btn btn-sm btn-outline-primary ms-1" title="Edit"><i class="bi bi-pencil"></i></a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="11" class="text-center text-muted py-4">No orders found for selected filters.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

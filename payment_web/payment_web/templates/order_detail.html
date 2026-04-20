@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ order.ref_no }}{% endblock %}
+{% block page_title %}Order: {{ order.ref_no }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <div>
+    <a href="/orders/edit/{{ order.id }}" class="btn btn-primary btn-sm me-2"><i class="bi bi-pencil me-1"></i>Edit</a>
+    <a href="/orders/{{ order.id }}/pdf" target="_blank" class="btn btn-danger btn-sm me-2"><i class="bi bi-file-pdf me-1"></i>PDF</a>
+    <a href="/orders/{{ order.id }}/excel" class="btn btn-success btn-sm me-2"><i class="bi bi-file-excel me-1"></i>Excel</a>
+    <form method="POST" action="/orders/{{ order.id }}/delete" style="display:inline" onsubmit="return confirm('Delete this order?')">
+      <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>
+    </form>
+  </div>
+  <a href="/history" class="btn btn-secondary btn-sm">← History</a>
+</div>
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3"><small class="text-muted d-block">Account</small><strong>{{ order.account_name }}</strong></div>
+      <div class="col-md-2"><small class="text-muted d-block">Ref No</small><strong class="text-primary">{{ order.ref_no }}</strong></div>
+      <div class="col-md-2"><small class="text-muted d-block">Date</small>{{ order.order_date }}</div>
+      <div class="col-md-2"><small class="text-muted d-block">Cheque</small>{{ order.cheque_no or '—' }}</div>
+      <div class="col-md-2"><small class="text-muted d-block">Cheque Date</small>{{ order.cheque_date or '—' }}</div>
+      <div class="col-md-1"><small class="text-muted d-block">Net Total</small><strong class="text-primary">{{ fmt(order.total_net) }}</strong></div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.84rem">
+      <thead style="background:#1A5276;color:#fff"><tr>
+        <th>#</th><th>Party</th><th>Beneficiary</th><th>Bank</th><th>Account No</th>
+        <th>IFSC</th><th>Branch</th><th>Type</th><th>Work</th>
+        <th>Amount</th><th>Advance</th><th>Net</th><th>Note</th>
+      </tr></thead>
+      <tbody>
+      {% for it in items %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ it.party_name }}</td><td>{{ it.beneficiary_name }}</td>
+        <td>{{ it.bank_name }}</td><td>{{ it.account_number }}</td>
+        <td>{{ it.ifsc_code }}</td><td>{{ it.branch or '—' }}</td>
+        <td><span class="badge" style="background:{% if it.transfer_type=='NEFT' %}#E6F1FB;color:#0C447C{% elif it.transfer_type=='RTGS' %}#EAF3DE;color:#27500A{% else %}#FAEEDA;color:#633806{% endif %}">{{ it.transfer_type }}</span></td>
+        <td>{{ it.work_name }}</td>
+        <td>{{ "%.2f"|format(it.payment_amount|float) }}</td>
+        <td>{{ "%.2f"|format(it.advance_amount|float) }}</td>
+        <td class="fw-bold text-primary">{{ fmt(it.net_amount) }}</td>
+        <td>{{ it.note or '' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr>
+        <td colspan="11" class="text-end fw-bold">Net Total:</td>
+        <td class="fw-bold text-primary fs-6">{{ fmt(order.total_net) }}</td><td></td>
+      </tr></tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

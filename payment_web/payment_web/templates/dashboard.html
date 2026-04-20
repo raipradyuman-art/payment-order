@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Payment Order{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block topbar_right %}{{ self.today() if self.today is defined else '' }}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  {% for icon,val,lbl,col in [
+    ('bi-bank',stats.accounts,'Our Accounts','#1A5276'),
+    ('bi-people',stats.parties,'Parties / Staff','#148F77'),
+    ('bi-receipt',stats.orders,'Total Orders','#7D3C98'),
+    ('bi-currency-rupee',fmt(stats.today),"Today's Total",'#C0392B'),
+    ('bi-calendar-month',fmt(stats.month),'This Month','#B7950B'),
+  ] %}
+  <div class="col-6 col-md-4 col-lg">
+    <div class="stat-card">
+      <i class="bi {{ icon }} mb-1" style="font-size:1.4rem;color:{{ col }}"></i>
+      <div class="val" style="color:{{ col }}">{{ val }}</div>
+      <div class="lbl">{{ lbl }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-clock-history me-2"></i>Recent Payment Orders</span>
+    <a href="/orders/new" class="btn btn-primary btn-sm"><i class="bi bi-plus me-1"></i>New Order</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr>
+        <th>Ref No</th><th>Date</th><th>Account</th><th>Cheque</th>
+        <th>Items</th><th>Net Total</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+      {% for o in recent %}
+      <tr>
+        <td><a href="/orders/{{ o.id }}" class="fw-semibold text-decoration-none">{{ o.ref_no }}</a></td>
+        <td>{{ o.order_date }}</td>
+        <td>{{ o.account_name or '—' }}</td>
+        <td>{{ o.cheque_no or '—' }}</td>
+        <td><span class="badge bg-secondary">{{ o.items }}</span></td>
+        <td class="fw-semibold">{{ fmt(o.total_net) }}</td>
+        <td><span class="badge bg-success">{{ o.status }}</span></td>
+        <td>
+          <a href="/orders/{{ o.id }}/pdf" target="_blank" class="btn btn-sm btn-outline-danger me-1" title="PDF"><i class="bi bi-file-pdf"></i></a>
+          <a href="/orders/{{ o.id }}/excel" class="btn btn-sm btn-outline-success me-1" title="Excel"><i class="bi bi-file-excel"></i></a>
+          <a href="/orders/edit/{{ o.id }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center text-muted py-4">No orders yet. <a href="/orders/new">Create your first order →</a></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

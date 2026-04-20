@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Payment Order{% endblock %}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+:root{--primary:#1A5276;--primary-light:#2E86C1;--accent:#148F77;--sidebar-w:220px}
+body{background:#F5F7FA;font-family:'Segoe UI',sans-serif}
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--primary);position:fixed;top:0;left:0;z-index:100;overflow-y:auto}
+.sidebar-brand{padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.15)}
+.sidebar-brand h6{color:#fff;margin:0;font-size:.95rem;font-weight:700}
+.sidebar-brand small{color:#AED6F1;font-size:.75rem}
+.nav-link-custom{display:flex;align-items:center;gap:.6rem;padding:.6rem 1.25rem;color:rgba(255,255,255,.85);text-decoration:none;font-size:.88rem;border-radius:0;transition:background .15s}
+.nav-link-custom:hover,.nav-link-custom.active{background:var(--primary-light);color:#fff}
+.nav-link-custom i{font-size:.95rem;width:18px;text-align:center}
+.main-content{margin-left:var(--sidebar-w);padding:0}
+.topbar{background:#fff;border-bottom:1px solid #e0e3e8;padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99}
+.topbar h5{margin:0;color:var(--primary);font-weight:700;font-size:1rem}
+.page-body{padding:1.5rem}
+.card{border:1px solid #e0e3e8;border-radius:10px;box-shadow:none}
+.card-header{background:#fff;border-bottom:1px solid #e0e3e8;font-weight:600;color:var(--primary)}
+.btn-primary{background:var(--primary);border-color:var(--primary)}
+.btn-primary:hover{background:var(--primary-light);border-color:var(--primary-light)}
+.btn-success{background:var(--accent);border-color:var(--accent)}
+.stat-card{background:#fff;border:1px solid #e0e3e8;border-radius:10px;padding:1rem 1.25rem;text-align:center}
+.stat-card .val{font-size:1.6rem;font-weight:700}
+.stat-card .lbl{font-size:.78rem;color:#6c757d}
+.badge-neft{background:#E6F1FB;color:#0C447C}
+.badge-rtgs{background:#EAF3DE;color:#27500A}
+.badge-imps{background:#FAEEDA;color:#633806}
+.table>thead>tr>th{font-size:.82rem;text-transform:uppercase;letter-spacing:.03em;color:#6c757d;border-bottom:2px solid #e0e3e8;background:#fafafa}
+.table>tbody>tr>td{font-size:.88rem;vertical-align:middle}
+.form-label{font-size:.85rem;font-weight:600;color:#333}
+.form-control,.form-select{font-size:.88rem}
+.alert{font-size:.88rem}
+@media(max-width:768px){.sidebar{width:100%;min-height:auto;position:relative}.main-content{margin-left:0}}
+</style>
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+{% if session.user_id %}
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <h6><i class="bi bi-credit-card-2-front me-2"></i>Payment Order</h6>
+    <small>{{ session.username|upper }}</small>
+  </div>
+  <nav class="py-2">
+    <a href="/" class="nav-link-custom {% if request.path=='/' %}active{% endif %}"><i class="bi bi-speedometer2"></i>Dashboard</a>
+    <a href="/company" class="nav-link-custom {% if '/company' in request.path %}active{% endif %}"><i class="bi bi-building"></i>Company Settings</a>
+    <a href="/accounts" class="nav-link-custom {% if '/accounts' in request.path %}active{% endif %}"><i class="bi bi-bank"></i>Our Bank Accounts</a>
+    <a href="/masters" class="nav-link-custom {% if '/masters' in request.path %}active{% endif %}"><i class="bi bi-journal-bookmark"></i>Masters</a>
+    <a href="/parties" class="nav-link-custom {% if '/parties' in request.path %}active{% endif %}"><i class="bi bi-people"></i>Parties & Staff</a>
+    <div style="border-top:1px solid rgba(255,255,255,.1);margin:.5rem 0"></div>
+    <a href="/orders/new" class="nav-link-custom {% if request.path=='/orders/new' %}active{% endif %}"><i class="bi bi-plus-circle"></i>New Payment Order</a>
+    <a href="/history" class="nav-link-custom {% if '/history' in request.path %}active{% endif %}"><i class="bi bi-clock-history"></i>Payment History</a>
+    <a href="/reports" class="nav-link-custom {% if '/reports' in request.path %}active{% endif %}"><i class="bi bi-bar-chart"></i>Reports</a>
+    {% if session.user_role=='admin' %}
+    <div style="border-top:1px solid rgba(255,255,255,.1);margin:.5rem 0"></div>
+    <a href="/users" class="nav-link-custom {% if '/users' in request.path %}active{% endif %}"><i class="bi bi-person-gear"></i>Users</a>
+    {% endif %}
+    <div style="border-top:1px solid rgba(255,255,255,.1);margin:.5rem 0"></div>
+    <a href="/logout" class="nav-link-custom"><i class="bi bi-box-arrow-right"></i>Logout</a>
+  </nav>
+</div>
+<div class="main-content">
+  <div class="topbar">
+    <h5>{% block page_title %}{% endblock %}</h5>
+    <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>{% block topbar_right %}{% endblock %}</small>
+  </div>
+  <div class="page-body">
+    {% with messages=get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for cat,msg in messages %}
+    <div class="alert alert-{{ 'success' if cat=='success' else 'danger' if cat=='error' else 'info' }} alert-dismissible fade show py-2" role="alert">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}{% endif %}{% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

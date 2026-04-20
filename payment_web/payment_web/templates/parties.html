@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Parties & Staff{% endblock %}
+{% block page_title %}Parties & Staff{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <form method="GET" class="d-flex gap-2">
+    <input type="text" name="q" class="form-control form-control-sm" placeholder="Search name..." value="{{ q }}" style="width:200px">
+    <select name="type" class="form-select form-select-sm" style="width:130px">
+      {% for t in ['All','Party','Staff','Supplier','Contractor','Labour','Debtor','Creditor','Other'] %}
+      <option {{ 'selected' if ptype==t }}>{{ t }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+  </form>
+  <a href="/parties/add" class="btn btn-primary btn-sm"><i class="bi bi-plus me-1"></i>Add Party/Staff</a>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>ID</th><th>Name</th><th>Type</th><th>PAN</th><th>Phone</th><th>City</th><th>Accounts</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for p in parties %}
+      <tr>
+        <td>{{ p.id }}</td>
+        <td><a href="/parties/{{ p.id }}" class="fw-semibold text-decoration-none">{{ p.name }}</a></td>
+        <td><span class="badge bg-secondary">{{ p.party_type or '—' }}</span></td>
+        <td>{{ p.pan_no or '—' }}</td><td>{{ p.phone or '—' }}</td><td>{{ p.city or '—' }}</td>
+        <td><span class="badge bg-primary">{{ p.acc_count }}</span></td>
+        <td>
+          <a href="/parties/{{ p.id }}" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-eye"></i></a>
+          <a href="/parties/edit/{{ p.id }}" class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-pencil"></i></a>
+          <form method="POST" action="/parties/{{ p.id }}/delete" style="display:inline" onsubmit="return confirm('Delete {{ p.name }}?')">
+            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center text-muted py-4">No parties found. <a href="/parties/add">Add first party →</a></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
